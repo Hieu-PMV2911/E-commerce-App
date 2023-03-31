@@ -30,4 +30,52 @@ const loginUser = asyncHandler(async (req, res, next)=>{
 	};
 });
 
-module.exports = {createUser, loginUser};
+const getAllUser = asyncHandler(async (req, res, next)=>{
+	try {
+		const getUser = await User.find();
+		res.json(getUser);
+	} catch (error) {
+		throw new Error(error);
+	}
+});
+
+const getUser = asyncHandler(async (req, res, next)=>{
+	const {id} = req.params;
+	try {
+		const getUser = await User.findById(id);
+		res.json(getUser);
+	} catch (error) {
+		throw new Error(error);
+	}
+});
+
+const updateUser = asyncHandler(async (req, res, next)=>{
+	const {id} = req.params;
+	try {
+		const getUser = await User.findById(id);
+		const update = await User.findByIdAndUpdate(getUser,{
+			firstName: req?.body?.firstName,
+			lastName: req?.body?.lastName,
+			email: req?.body?.email,
+			mobile: req?.body?.mobile,
+		},{new: true})
+
+		res.json(update);
+	} catch (error) {
+		throw new Error(error);
+	}
+});
+
+
+const deleteUser = asyncHandler(async (req, res, next)=>{
+	const {id} = req.params;
+	try {
+		const findId = User.findById(id);
+		await User.deleteOne(findId);
+		res.json("Delete success !!!");
+	} catch (error) {
+		throw new Error(error);
+	}
+});
+
+module.exports = {createUser, loginUser, getAllUser, getUser, deleteUser,updateUser};

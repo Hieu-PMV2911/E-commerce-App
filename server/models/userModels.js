@@ -28,6 +28,19 @@ var userSchema = new mongoose.Schema({
 	type:String,
 	default: "user",	
     },
+    cart:{
+	type:Array,
+	default: [],	
+    },
+    address:[{
+	type:Object,
+	ref: "Address",	
+    }],
+    wishlist:[{
+	type:Object,
+	ref: "Product",	
+    }],
+
 });
 
 userSchema.pre("save", async function(next) {
