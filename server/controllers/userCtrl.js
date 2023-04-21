@@ -3,6 +3,7 @@ const asyncHandler = require('express-async-handler');
 const {generateToken} = require('../config/jwtToken');
 const validateId = require('../utils/validatemongoId');
 const { generateRefreshToken } = require('../config/refreshToken');
+const jwt = require('jsonwebtoken');
 
 const createUser = asyncHandler(async (req, res, next)=>{
 	const email = req.body.email;
@@ -20,7 +21,7 @@ const loginUser = asyncHandler(async (req, res, next)=>{
 	const find = await User.findOne({email});
 	if(find && (await find.isPasswordMatched(password))){
 		const refreshToken = await generateRefreshToken(find?._id);
-		await User.findByIdAndUpdate(find?._id,{
+		await User.findByIdAndUpdate(find._id,{
 			refreshToken: refreshToken,
 		},{new: true});
 		res.cookie("refreshToken",refreshToken,{
@@ -41,8 +42,39 @@ const loginUser = asyncHandler(async (req, res, next)=>{
 });
 
 const handleRefreshToken = asyncHandler(async (req, res, next) => {
-	const token = req.cookies; 
-	console.log(token);
+	const token = req.cookies;
+	if(!token?.refreshToken) throw new Error("No refresh token in cookie !!!");
+	const refreshToken = User.findOne({refreshToken: token.refreshToken});
+	if(!refreshToken) throw new Error("No refresh token present in db or not match");
+	jwt.verify(refreshToken, process.env.JWT_TOKEN, (err, decoded)=>{
+		if(err || refreshToken.id !== decoded.id){
+			throw new Error("There is something wrong with refresh token");
+		}
+
+		const accessToken = generateToken(refreshToken?._id);
+		res.json({accessToken});
+	}) 
+});
+
+const clearRefreshToken = asyncHandler(async (req, res, next) => {
+	const token = req.cookies;
+	if(!token?.refreshToken) throw new Error("No refresh token in cookie !!!");
+	const refreshToken = User.findOne({refreshToken: token.refreshToken});
+	if(!refreshToken){
+		res.clearCookie("refreshToken",{
+			httpOnly: true,
+			secure: true
+		});
+		return res.sendStatus(204);
+	}
+	await User.findOneAndUpdate(refreshToken, {
+		refreshToken: ""
+	})
+	res.clearCookie("refreshToken",{
+		httpOnly: true,
+		secure: true
+	})
+	return res.sendStatus(204);
 });
 
 const getAllUser = asyncHandler(async (req, res, next)=>{
@@ -129,4 +161,4 @@ const unBlockUser = asyncHandler(async (req, res, next)=>{
 
 
 
-module.exports = {createUser, loginUser, getAllUser, getUser, deleteUser,updateUser, blockUser, unBlockUser, handleRefreshToken};
+module.exports = {createUser, loginUser, getAllUser, getUser, deleteUser,updateUser, blockUser, unBlockUser, handleRefreshToken, clearRefreshToken};

@@ -9,12 +9,12 @@ const bodyParser = require('body-parser');
 const { notFound, errorHandler } = require('./middlewares/errorHandle');
 DBconnect();
 
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
 app.use('/api/users', userRouter);
 
-app.use(cookieParser());
 app.use(notFound);
 app.use(errorHandler);
 
